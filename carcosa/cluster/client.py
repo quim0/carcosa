@@ -2,7 +2,6 @@ from typing import Optional, List, Union, Callable, Dict, Iterator, Tuple, Any
 from random import choices
 import string
 import os
-import types
 import Pyro4
 import logging
 
@@ -72,7 +71,6 @@ class ClusterClient:
     @property
     def local_path(self):
         return self._local_path
-
 
     def disconnect(self) -> None:
         if self.server:

@@ -40,17 +40,17 @@ class SlurmServer(ClusterServer):
             ]
         if job_id:
             qargs.append('-j {}'.format(job_id))
+
+        sacct: List[Tuple[str, ...]] = []
         try:
             res = self.run(qargs)
             if res.returncode != 0:
                 logging.error('sacct returned non 0.')
-                sacct = []
             else:
                 out = res.stdout
                 sacct = [tuple(i.split('|')) for i in out.split('\n')]
         except Exception:
             logging.error('Error running sacct to get the metrics')
-            sacct = []
 
         for line in sacct:
             yield line
@@ -238,7 +238,7 @@ class SlurmClient(ClusterClient):
                         self.cleanup()
                         return False
 
-        args = dict(
+        script_args = dict(
             precmd=self.parse_options(**options),
             name=script.name,
             command=cmd
@@ -247,7 +247,7 @@ class SlurmClient(ClusterClient):
         # Generate the sbatch script that will be sent to slurm.
         with open(script.local.sbatch, 'w') as f:
             f.write(
-                scripts.SCRIPT_RUNNER.format(args)
+                scripts.SCRIPT_RUNNER.format(script_args)
                 )
 
         return True

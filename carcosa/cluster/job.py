@@ -45,13 +45,13 @@ class Job:
 
     @property
     def finished(self):
-        if self.status in DONE_STATES:
+        if self.status.lower() in DONE_STATES:
             return True
         return False
 
     @property
     def running(self):
-        if self.status in ACTIVE_STATES:
+        if self.status.lower() in ACTIVE_STATES:
             return True
         return False
 
