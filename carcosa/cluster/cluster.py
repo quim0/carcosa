@@ -2,6 +2,7 @@ from typing import Callable, Optional
 import logging
 
 from . import ClusterClient, ClusterServer
+from .errors import ClusterClientError
 
 from carcosa import qsystems
 
@@ -20,15 +21,15 @@ class Cluster():
                  client: ClusterClient,
                  server: ClusterServer,
                  qsystem: str) -> None:
-        self.client: Optional[ClusterClient] = client
-        self.server: Optional[ClusterServer] = server
+        self._client: ClusterClient = client
+        self._server: ClusterServer = server
         if qsystem not in qsystems.systems:
             raise ValueError('Queue system {} is not valid'.format(qsystem))
-        self.qsystem: str = qsystem
+        self._qsystem: str = qsystem
 
     @classmethod
     def new(cls,
-            qsystem: Optional[str] = None,
+            qsystem: str = '',
             uri: Optional[str] = None):
         c, s = (None, None)
         if qsystem:
@@ -57,15 +58,15 @@ class Cluster():
 
     @property
     def client(self) -> ClusterClient:
-        return self.client
+        return self._client
 
     @property
     def server(self) -> ClusterServer:
-        return self.server
+        return self._server
 
     @property
     def qsystem(self) -> str:
-        return self.qsystem
+        return self._qsystem
 
     def launch(self, f: Callable) -> bool:
         pass

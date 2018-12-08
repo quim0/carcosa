@@ -1,6 +1,7 @@
-from typing import Optional
-from random import choice
+from typing import Optional, List, Union, Callable, Dict, Iterator, Tuple, Any
+from random import choices
 import string
+import os
 import types
 import Pyro4
 import logging
@@ -54,7 +55,7 @@ class ClusterClient:
     @remote_path.setter
     def remote_path(self, val: str) -> None:
         logging.warning('Overwriting remote path.')
-        self._remote_path = remote_path
+        self._remote_path = val
 
     @property
     def local_path(self) -> Optional[str]:
@@ -62,7 +63,7 @@ class ClusterClient:
 
     @local_path.setter
     def local_path(self, val: str) -> None:
-        if isintance(val, str) and os.path.exists(val):
+        if isinstance(val, str) and os.path.exists(val):
             logging.warning('Overwriting local path.')
             self._local_path = val
         else:
@@ -83,10 +84,9 @@ class ClusterClient:
                 'Trying to release a non existing server. Aborting.'
                 )
 
-        def new_job(self,
-                    f: Union[Callable, str],
-                    options: Dict = {},
-                    jobname: Optional[str] = None) -> Job:
+    def new_job(self, f: Union[Callable, str],
+                options: Dict = {},
+                jobname: Optional[str] = None) -> Job:
         """
         Get a Job for the function or command passed.
 
@@ -102,7 +102,9 @@ class ClusterClient:
         """
         if not jobname:
             # XXX: Only works with python 3.6+ ?
-            jobname = choice(string.ascii_uppercase + string.digits, k=5)
+            jobname = ''.join(
+                choices(string.ascii_uppercase + string.digits, k=6)
+                )
 
         if not self.local_path or not self.remote_path:
             logging.error(
@@ -111,11 +113,8 @@ class ClusterClient:
             raise ValueError('Remote or local path is not set.')
 
         script = scripts.Script(jobname, self.local_path, self.remote_path)
-        if isinstance(f, types.FunctionType):
-
-        elif isinstance(f, str):
-
-        pass
+        j = Job(f, script, options, self)
+        return j
 
     def _get_server(self, retries: int = 3) -> Optional[Pyro4.Proxy]:
         if not self.uri:
@@ -136,3 +135,19 @@ class ClusterClient:
             return None
 
         return s
+
+    def metrics(self, job_id: int = None) -> Iterator[Tuple[str, ...]]:
+        return self.server.metrics(job_id=job_id)
+
+    # Pure virtual functions (to be implemented by the queue system subclasses)
+    def gen_scripts(self,
+                    script: scripts.Script,
+                    options: Dict,
+                    function: Optional[Callable[..., Any]] = None,
+                    args: Optional[Tuple] = None,
+                    kwargs: Optional[Dict] = None,
+                    cmd: Optional[str] = None) -> bool:
+        raise NotImplementedError('This must be implemented in any subclass')
+
+    def submit(self, script: scripts.Script) -> str:
+        raise NotImplementedError('This must be implemented in any subclass')

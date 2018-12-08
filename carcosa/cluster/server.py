@@ -1,5 +1,5 @@
+from typing import NoReturn, Tuple, Union, Optional, Iterator, List
 import Pyro4
-from typing import NoReturn, Tuple, Union, Optional
 import subprocess
 import os
 import errno
@@ -210,10 +210,10 @@ class ClusterServer:
                 raise errors.ClusterServerError('PID file not found')
 
             with open(self.pid_filepath, 'r') as f:
-                pid = f.read()
+                spid = f.read()
 
             try:
-                os.kill(pid, 0)
+                os.kill(int(spid), 0)
             except OSError as e:
                 # If EPERM is the error we don't have permissions to send the
                 # signal to the process, but it exists.
@@ -227,4 +227,47 @@ class ClusterServer:
             with open(self.uri_filepath, 'r') as f:
                 uri = f.read()
 
-            return (pid, uri)
+            return (spid, uri)
+
+    # Pure virtual functions
+    def metrics(self,
+                job_id: Optional[int] = None) -> Iterator[Tuple[str, ...]]:
+        """
+        ..note::
+
+            Pure virtual, this must be implemented by any subclass.
+        """
+        raise NotImplementedError('This must be implemented by subclasses.')
+
+    def queue_test(self) -> bool:
+        """
+        ..note::
+
+            Pure virtual, this must be implemented by any subclass.
+        """
+        raise NotImplementedError('This must be implemented by subclasses.')
+
+    def submit(self, script_path: str) -> Optional[str]:
+        """
+        ..note::
+
+            Pure virtual, this must be implemented by any subclass.
+        """
+        raise NotImplementedError('This must be implemented by subclasses.')
+
+    def kill(self, job_ids: List[Union[int, str]]) -> bool:
+        """
+        ..note::
+
+            Pure virtual, this must be implemented by any subclass.
+        """
+        raise NotImplementedError('This must be implemented by subclasses.')
+
+    def queue_parser(self, job_id: Optional[str] = None) \
+            -> Iterator[Tuple[str, ...]]:
+        """
+        ..note::
+
+            Pure virtual, this must be implemented by any subclass.
+        """
+        raise NotImplementedError('This must be implemented by subclasses.')

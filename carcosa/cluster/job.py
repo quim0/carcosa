@@ -1,15 +1,15 @@
-from typing import Dict, Union, Callable, List
+from typing import Dict, Union, Callable, List, Optional, Any
 import types
 import logging
 
 from .client import ClusterClient
-from .cluster import DONE_STATES
+from .cluster import DONE_STATES, ACTIVE_STATES
 
 from carcosa import scripts
 
 
 class Job:
-    INIT_STATUS = 'carcosa_init'
+    INIT_STATUS: str = 'carcosa_not_launched'
 
     def __init__(self,
                  f: Union[Callable, str],
@@ -31,7 +31,7 @@ class Job:
         self.client: ClusterClient = client
 
         # Status updated when performing an "update"
-        self.status: str = INIT_STATUS
+        self.status: str = self.INIT_STATUS
 
         # Metrics, will be filled when the job finishes
         self.metrics: Dict = dict()
@@ -41,17 +41,22 @@ class Job:
         self.script = s
         self.options = o
 
-        self.logging.info('Created new job {}'.format(id_))
+        logging.info('Created new job {}'.format(self.script.name))
 
     @property
     def finished(self):
-        if self.state in DONE_STATES:
+        if self.status in DONE_STATES:
             return True
-        else:
-            return False
+        return False
+
+    @property
+    def running(self):
+        if self.status in ACTIVE_STATES:
+            return True
+        return False
 
     def udpate(self) -> None:
-        if self.status == INIT_STATUS:
+        if self.status == self.INIT_STATUS:
             logging.warning('Job have not been submitted yet. Aborting')
             return
 
@@ -59,13 +64,13 @@ class Job:
             logging.warning('Job already finished')
             return
 
-        self.logging.debug('Updating job {}'.format(self.id)
+        logging.debug('Updating job {}'.format(self.id))
         server = self.client.server
         id_, status = server.queue_parser(job_id=self.id)
 
         # This *MUST NOT* happen
         if id_ != self.id:
-            self.logging.critical(
+            logging.critical(
                 'Queue system id for the job is not the same as the local job '
                 'id. This *MUST NOT* happen and probably there\'s a bug in '
                 'the code.'
@@ -89,27 +94,29 @@ class Job:
             force (bool):
                 Relaunch the job even if it have been already launched.
         """
-        if not force and self.status != INIT_STATUS:
+        if not force and self.status != self.INIT_STATUS:
             logging.warning('Job have been already lauched. Aborting')
             return
         if not force and self.finished:
             logging.warning('Job have already finished.')
             return
-        script_kwargs = dict()
+        script_kwargs: Dict[str, Any] = dict()
         if isinstance(self.f, types.FunctionType):
             script_kwargs['function'] = self.f
             script_kwargs['args'] = args
             script_kwargs['kwargs'] = kwargs
         elif isinstance(self.f, str):
-            script_kwargs['cmd']
+            script_kwargs['cmd'] = self.f
 
         self.client.gen_scripts(
             self.script,
-            self.options
+            self.options,
             **script_kwargs
             )
 
         self.id = self.client.submit(self.script)
+
+        logging.info('Job launched with id {}'.format(self.id))
 
     def __str__(self):
         return '<JOB-{jid}({status})>'.format(jid=self.id, status=self.status)
