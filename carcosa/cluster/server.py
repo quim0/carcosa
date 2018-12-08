@@ -166,13 +166,18 @@ class ClusterServer:
                 # process start.
                 os.close(r)
                 w = os.fdopen(w, 'w')
-                with Pyro4.daemon(host=host, port=port) as daemon:
+                with Pyro4.Daemon(host=host, port=port) as daemon:
+                    logging.info('Registering daemon')
                     uri = daemon.register(self)
                     self._daemon = daemon
 
                     with open(self.pid_filepath, 'w') as f:
+                        logging.info(
+                            'PID {}. Saving to file'.format(os.getpid())
+                            )
                         f.write(str(os.getpid()))
                     with open(self.uri_filepath, 'w') as f:
+                        logging.info('URI {}. Saving to file'.format(uri))
                         f.write(str(uri))
 
                     # Avoid IO errors with stderr and stdout, redirect them to
@@ -192,11 +197,15 @@ class ClusterServer:
                         except Exception as e:
                             w.write('ko')
                             logging.error(e)
+                            os._exit(1)
+            except Exception as e:
+                print(e)
             finally:
                 # Make sure that always is written something to the pipe, to
                 # avoid blocking the parent process.
                 w.write('finish')
                 w.close()
+                os._exit(0)
         else:
             os.close(w)
 
