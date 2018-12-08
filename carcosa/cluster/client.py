@@ -68,10 +68,6 @@ class ClusterClient:
         else:
             logging.error('Local path passed does not exist, aborting.')
 
-    @property
-    def local_path(self):
-        return self._local_path
-
     def disconnect(self) -> None:
         if self.server:
             self.server._pyroRelease()
@@ -112,6 +108,9 @@ class ClusterClient:
 
         script = scripts.Script(jobname, self.local_path, self.remote_path)
         j = Job(f, script, options, self)
+
+        self.jobs.append(j)
+
         return j
 
     def _get_server(self, retries: int = 3) -> Optional[Pyro4.Proxy]:
@@ -138,6 +137,7 @@ class ClusterClient:
         return self.server.metrics(job_id=job_id)
 
     # Pure virtual functions (to be implemented by the queue system subclasses)
+
     def gen_scripts(self,
                     script: scripts.Script,
                     options: Dict,

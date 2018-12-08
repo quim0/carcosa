@@ -2,8 +2,7 @@ from typing import Dict, Union, Callable, List, Optional, Any
 import types
 import logging
 
-from .client import ClusterClient
-from .cluster import DONE_STATES, ACTIVE_STATES
+from .states import DONE_STATES, ACTIVE_STATES
 
 from carcosa import scripts
 
@@ -15,8 +14,9 @@ class Job:
                  f: Union[Callable, str],
                  s: scripts.Script,
                  o: Dict,
-                 client: ClusterClient) -> None:
+                 client: 'ClusterClient') -> None:
         """
+        TODO: Cluster client type annotation
         Args:
             f (types.Function or str):
                 Function or command to execute.
@@ -28,12 +28,15 @@ class Job:
                 Client object.
         """
         self.id: Optional[str] = None
-        self.client: ClusterClient = client
+        self.client: 'ClusterClient' = client
+
+        self.launched: bool = False
 
         # Status updated when performing an "update"
         self.status: str = self.INIT_STATUS
 
         # Metrics, will be filled when the job finishes
+        # TODO
         self.metrics: Dict = dict()
 
         # Parameters needed to construct and launch the scripts
@@ -55,8 +58,8 @@ class Job:
             return True
         return False
 
-    def udpate(self) -> None:
-        if self.status == self.INIT_STATUS:
+    def update(self) -> None:
+        if not self.launched:
             logging.warning('Job have not been submitted yet. Aborting')
             return
 
@@ -95,7 +98,7 @@ class Job:
                 Relaunch the job even if it have been already launched.
         """
         if not force and self.status != self.INIT_STATUS:
-            logging.warning('Job have been already lauched. Aborting')
+            logging.warning('Job have been already launched. Aborting')
             return
         if not force and self.finished:
             logging.warning('Job have already finished.')
@@ -115,6 +118,7 @@ class Job:
             )
 
         self.id = self.client.submit(self.script)
+        self.launched = True
 
         logging.info('Job launched with id {}'.format(self.id))
 

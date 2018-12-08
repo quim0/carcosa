@@ -57,12 +57,12 @@ class Script(Generic[T]):
         self._mode = 'local'
 
     @property
-    def remote(self) -> Script[T]:
+    def remote(self) -> 'Script[T]':
         self._mode = 'remote'
         return self
 
     @property
-    def local(self) -> Script[T]:
+    def local(self) -> 'Script[T]':
         self._mode = 'local'
         return self
 
