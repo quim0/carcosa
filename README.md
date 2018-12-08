@@ -11,6 +11,7 @@ are even the same.
 * Carcosa code is simpler, it aims to be lightweight and give more control to
   the programmer. It have also less features (no pandas stuff, local queues, no
   job dependencies managed by carcosa...).
+* Carcosa gets metrics for the jobs.
 
 Know what your needs are and then decide what to use.
 
