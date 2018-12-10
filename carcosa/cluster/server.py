@@ -1,4 +1,4 @@
-from typing import NoReturn, Tuple, Union, Optional, Iterator, List
+from typing import Tuple, Union, Optional, Iterator, List
 import Pyro4
 import subprocess
 import os
@@ -133,9 +133,11 @@ class ClusterServer:
     def ping(self) -> str:
         return 'pong'
 
+    # For typing the best would be to use 'NoReturn' instead of 'None', but it's
+    # new in Python 3.6.5, most systems have 3.6.1 atm.
     def daemonize(self,
                   host: Optional[str] = None,
-                  port: int = 0) -> Union[Tuple[str, str], NoReturn]:
+                  port: int = 0) -> Union[Tuple[str, str], None]:
         """
         Starts a server in a new process.
 
