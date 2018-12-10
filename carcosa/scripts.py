@@ -1,5 +1,6 @@
 from os import path
 from typing import TypeVar, Generic, Optional
+import logging
 
 SCRIPT_RUNNER = """\
 #!/bin/bash
@@ -43,8 +44,8 @@ class Script(Generic[T]):
     """
     def __init__(self,
                  job_name: str,
-                 local_path: str,
-                 remote_path: str) -> None:
+                 local_path: Optional[str],
+                 remote_path: Optional[str]) -> None:
         self.name = job_name
         self.marshal_file = '{}.marshal'.format(job_name)
         self.sbatch_file = '{}.sbatch'.format(job_name)
@@ -67,18 +68,27 @@ class Script(Generic[T]):
         return self
 
     @property
-    def path(self) -> str:
+    def path(self) -> Optional[str]:
         if self._mode == 'local':
             return self.local_path
         else:
             return self.remote_path
 
     def filepath(self, f: str) -> Optional[str]:
+        if not self.local_path or not self.remote_path:
+            e_msg = 'Local or remote path not set.'
+            logging.error(e_msg)
+            raise ValueError(e_msg)
+
         try:
             fname = {'marshal': self.marshal_file,
                      'sbatch': self.sbatch_file,
                      'python': self.python_file,
                      'out': self.out_file}[f]
-            return path.join(self.path, fname)
+            if self.path:
+                return path.join(self.path, fname)
+            else:
+                logging.warning('Path not set')
+                return None
         except KeyError:
             return None

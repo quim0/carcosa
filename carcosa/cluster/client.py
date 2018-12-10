@@ -15,6 +15,24 @@ class ClusterClient:
                  uri: Optional[str] = None,
                  remote_path: Optional[str] = None,
                  local_path: Optional[str] = None) -> None:
+        """
+        Args:
+            uri (str, optional):
+                Pyro4 URI where the server is running. This is optional in the
+                contructor because can be set later, but it **must** be set
+                before connection (first access to :py:attr:`~.server`).
+            local_path (str, optional):
+                Path where the jobs will create the scripts and write the
+                output files in local host. Usually it's mounted from
+                remote_path. This is optional, if it's not set, it **must** be
+                set later for each job individually.
+            remote_path (str, optional):
+                Path where the jobs will create the scripts and write the
+                output files in the remote server. This is optional, if it's
+                not set, it **must** be set later for each job individually.
+                If remote_path is not set, but local_path is, it'll assume that
+                they're the same.
+        """
         self._uri = uri
         self._server = None
 
@@ -49,6 +67,11 @@ class ClusterClient:
 
     @property
     def remote_path(self) -> Optional[str]:
+        """
+        If a remote path is set, this will be used a the default for all the
+        jobs. If not, a remote path **must** be set individually for each new
+        job.
+        """
         return self._remote_path
 
     @remote_path.setter
@@ -58,6 +81,11 @@ class ClusterClient:
 
     @property
     def local_path(self) -> Optional[str]:
+        """
+        If a local path is set, this will be used a the default for all the
+        jobs. If not, a local path **must** be set individually for each new
+        job.
+        """
         return self._local_path
 
     @local_path.setter
@@ -85,14 +113,17 @@ class ClusterClient:
         Get a Job for the function or command passed.
 
         Args:
-            f (function or str):
+            f (Union[Callable, str]):
                 It can be a function or a command, to execute in the queue
                 system.
-            options (dict):
+            options (dict, optional):
                 Options for sbatch, see queue system client.
+            jobname (str, optional):
+                Job of the name
 
-        Raises:
-            ValueError
+        Returns:
+            job (Job):
+                New job created.
         """
         if not jobname:
             # XXX: Only works with python 3.6+ ?
@@ -101,10 +132,10 @@ class ClusterClient:
                 )
 
         if not self.local_path or not self.remote_path:
-            logging.error(
-                'Local path and remote path must be set before creating a job.'
+            logging.warning(
+                'Local or remote path not set in client, if it\'s not set for '
+                'this job, carcosa won\'t be able to run it.'
                 )
-            raise ValueError('Remote or local path is not set.')
 
         script = scripts.Script(jobname, self.local_path, self.remote_path)
         j = Job(f, script, options, self)

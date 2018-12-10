@@ -1,10 +1,16 @@
-from typing import Dict, Union, Callable, List, Optional, Any
+from typing import Dict, Union, Callable, List, Optional, Any, TYPE_CHECKING
 import types
 import logging
+import os
 
 from .states import DONE_STATES, ACTIVE_STATES
 
 from carcosa import scripts
+
+if TYPE_CHECKING:
+    # This is a cyclic dependency at runtime, but it's necessary when
+    # performing the type checking.
+    from carcosa.cluster import ClusterClient
 
 
 class Job:
@@ -46,6 +52,52 @@ class Job:
 
         logging.info('Created new job {}'.format(self.script.name))
 
+    # Path related properties
+
+    @property
+    def local_path(self) -> Optional[str]:
+        return self.script.local_path
+
+    @local_path.setter
+    def local_path(self, val: str) -> None:
+        if isinstance(val, str) and os.path.exists(val):
+            logging.warning('Overwriting local path: new path {}'.format(val))
+            self.script.local_path = val
+        else:
+            logging.error('Local path passed does not exist.')
+            raise ValueError('Invalid local path, path does not exist.')
+
+    @property
+    def remote_path(self) -> Optional[str]:
+        return self.script.remote_path
+
+    @remote_path.setter
+    def remote_path(self, val: str) -> None:
+        logging.warning('Overwriting remote path: new path {}'.format(val))
+        self.script.remote_path = val
+
+    @property
+    def outfile(self) -> Optional[str]:
+        if 'output' in self.options.keys():
+            return self.options['output']
+        return None
+
+    @outfile.setter
+    def outfile(self, val: str) -> None:
+        self.options['output'] = val
+
+    @property
+    def errfile(self) -> Optional[str]:
+        if 'error' in self.options.keys():
+            return self.options['error']
+        return None
+
+    @errfile.setter
+    def errfile(self, val: str) -> None:
+        self.options['error'] = val
+
+    # Status properties
+
     @property
     def finished(self) -> bool:
         if self.status.lower() in DONE_STATES:
@@ -58,17 +110,7 @@ class Job:
             return True
         return False
 
-    @property
-    def outfile(self) -> Optional[str]:
-        if 'output' in self.options.keys():
-            return self.options['output']
-        return None
-
-    @property
-    def errfile(self) -> Optional[str]:
-        if 'error' in self.options.keys():
-            return self.options['error']
-        return None
+    # Data properties
 
     @property
     def stdout(self) -> Optional[str]:
@@ -100,6 +142,8 @@ class Job:
                 return f.read()
         return None
 
+    # Methods
+
     def update(self) -> None:
         if not self.launched:
             logging.warning('Job have not been submitted yet. Aborting')
@@ -109,7 +153,6 @@ class Job:
             logging.warning('Job already finished')
             return
 
-        logging.debug('Updating job {}'.format(self.id))
         server = self.client.server
         id_, status = server.queue_parser(job_id=self.id)
 
@@ -123,6 +166,10 @@ class Job:
             raise ValueError('Local job id is different from remote job id')
 
         self.status = status
+
+        logging.info(
+            'Job {} updated, new status: {}'.format(self, self.status)
+            )
 
     def launch(self,
                args: List = [],
@@ -138,6 +185,11 @@ class Job:
                 If the job is a python function, the keyword arguments for it.
             force (bool):
                 Relaunch the job even if it have been already launched.
+
+        Raises:
+            ValueError:
+                If local or remote paths are not set, as it won't be able to
+                generate the scripts.
         """
         if not force and self.status != self.INIT_STATUS:
             logging.warning('Job have been already launched. Aborting')
@@ -145,6 +197,14 @@ class Job:
         if not force and self.finished:
             logging.warning('Job have already finished.')
             return
+
+        if not self.local_path or not self.remote_path:
+            e_msg = (
+                'Local and remote paths must be set before launching a job.'
+                )
+            logging.error(e_msg)
+            raise ValueError(e_msg)
+
         script_kwargs: Dict[str, Any] = dict()
         if isinstance(self.f, types.FunctionType):
             script_kwargs['function'] = self.f
@@ -152,6 +212,8 @@ class Job:
             script_kwargs['kwargs'] = kwargs
         elif isinstance(self.f, str):
             script_kwargs['cmd'] = self.f
+
+        logging.info('Launching job with options: {}'.format(self.options))
 
         self.client.gen_scripts(
             self.script,
