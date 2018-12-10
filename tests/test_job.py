@@ -1,5 +1,6 @@
 from typing import List, Optional, Callable, Dict, Any, Tuple
 import pytest
+import tempfile
 
 from carcosa import scripts
 from carcosa.cluster import Job, ClusterClient
@@ -18,7 +19,8 @@ class FakeClient(ClusterClient):
                  uri: Optional[str] = None,
                  remote_path: Optional[str] = None,
                  local_path: Optional[str] = None) -> None:
-        super().__init__(uri=uri,
+        super().__init__(
+                uri=uri,
                 remote_path=remote_path,
                 local_path=local_path
                 )
@@ -67,6 +69,7 @@ def get_job(opts: List[Any] = []):
     j = Job(*opts, c)
     return j
 
+
 def test_init_status():
     j = get_job()
     assert isinstance(j.client, ClusterClient)
@@ -74,6 +77,7 @@ def test_init_status():
     assert not j.launched
     assert not j.finished
     assert not j.running
+
 
 def test_launch():
     j = get_job()
@@ -83,6 +87,7 @@ def test_launch():
     assert j.launched
     assert j.client.scripts_check
     assert j.client.submit_check
+
 
 def test_upate():
     j = get_job()
@@ -96,7 +101,7 @@ def test_upate():
     assert j.id == TEST_JOB_ID
 
     j.id = '12345'
-    with pytest.raises(ValueError) as e:
+    with pytest.raises(ValueError):
         j.update()
 
     j.id = TEST_JOB_ID
@@ -107,3 +112,70 @@ def test_upate():
     assert j.finished
     assert not j.running
     assert j.id == TEST_JOB_ID
+
+
+def test_check_local_path():
+    j = get_job()
+    with pytest.raises(ValueError):
+        j.local_path = '/path/does/not/exits/probably'
+
+
+def test_local_path():
+    j = get_job()
+    # Don't use windows pls
+    j.local_path = '/etc'
+    assert j.local_path == '/etc'
+
+
+def test_remote_path():
+    j = get_job()
+    j.remote_path = '/etc'
+    assert j.remote_path == '/etc'
+
+
+def test_outfile():
+    j = get_job()
+    ofile = '/tmp/outfile'
+    j.outfile = ofile
+    assert j.options['output'] == ofile
+    assert j.outfile == ofile
+
+
+def test_errfile():
+    j = get_job()
+    efile = '/tmp/errfile'
+    j.errfile = efile
+    assert j.options['error'] == efile
+    assert j.errfile == efile
+
+
+def test_stdout():
+    with tempfile.NamedTemporaryFile(mode='w+') as f:
+        test_str = 'testing testing'
+        j = get_job()
+        j.outfile = f.name
+        assert j.stdout is None
+        j.launched = True
+        assert j.stdout is None
+        j.status = 'completed'
+
+        f.write(test_str)
+        f.flush()
+
+        assert j.stdout == test_str
+
+
+def test_stderr():
+    with tempfile.NamedTemporaryFile(mode='w+') as f:
+        test_str = 'testing testing'
+        j = get_job()
+        j.errfile = f.name
+        assert j.stderr is None
+        j.launched = True
+        assert j.stderr is None
+        j.status = 'completed'
+
+        f.write(test_str)
+        f.flush()
+
+        assert j.stderr == test_str
