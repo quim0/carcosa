@@ -1,5 +1,7 @@
 # Carcosa
 
+[![Build Status](https://travis-ci.com/quim0/carcosa.svg?branch=master)](https://travis-ci.com/quim0/carcosa)
+
 Carcosa is a library to programmatically control remote clusters using python.
 It's highly inspired by [fyrd](https://github.com/MikeDacre/fyrd), some parts
 are even the same.
