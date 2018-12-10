@@ -53,15 +53,20 @@ class FakeClient(ClusterClient):
         return True
 
 
-def get_job():
+def get_job(opts: List[Any] = []):
     uri = TEST_URI
     local_path = TEST_LOCAL_PATH
     remote_path = TEST_REMOTE_PATH
     c = FakeClient(uri=uri, local_path=local_path, remote_path=remote_path)
-    script: scripts.Script = scripts.Script(
-        TEST_JOBNAME, local_path, remote_path
-        )
-    j = Job(lambda x: x*x, script, {}, c)
+    script = scripts.Script(TEST_JOBNAME, local_path, remote_path)
+    if len(opts) == 0:
+        # Function
+        opts.append(lambda x: x*x)
+        # Script
+        opts.append(script)
+        # Options
+        opts.append({})
+    j = Job(*opts, c)
     return j
 
 
