@@ -47,16 +47,58 @@ class Job:
         logging.info('Created new job {}'.format(self.script.name))
 
     @property
-    def finished(self):
+    def finished(self) -> bool:
         if self.status.lower() in DONE_STATES:
             return True
         return False
 
     @property
-    def running(self):
+    def running(self) -> bool:
         if self.status.lower() in ACTIVE_STATES:
             return True
         return False
+
+    @property
+    def outfile(self) -> Optional[str]:
+        if 'output' in self.options.keys():
+            return self.options['output']
+        return None
+
+    @property
+    def errfile(self) -> Optional[str]:
+        if 'error' in self.options.keys():
+            return self.options['error']
+        return None
+
+    @property
+    def stdout(self) -> Optional[str]:
+        if not self.launched:
+            logging.warning('Job have not been submitted yet. Aborting')
+            return None
+
+        if not self.finished:
+            logging.warning('Job have not finished yet')
+            return None
+
+        if self.outfile:
+            with open(self.outfile, 'r') as f:
+                return f.read()
+        return None
+
+    @property
+    def stderr(self) -> Optional[str]:
+        if not self.launched:
+            logging.warning('Job have not been submitted yet. Aborting')
+            return None
+
+        if not self.finished:
+            logging.warning('Job have not finished yet')
+            return None
+
+        if self.errfile:
+            with open(self.errfile, 'r') as f:
+                return f.read()
+        return None
 
     def update(self) -> None:
         if not self.launched:
