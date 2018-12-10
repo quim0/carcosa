@@ -1,6 +1,7 @@
 from typing import Optional, List, Union, Callable, Dict, Iterator, Tuple, Any
 from random import choices
 import string
+import types
 import os
 import Pyro4
 import logging
@@ -37,9 +38,8 @@ class ClusterClient:
         self._server = None
 
         self.local_path = local_path
-        if remote_path:
-            self.remote_path = remote_path
-        else:
+        self.remote_path = remote_path
+        if not remote_path and local_path:
             self.remote_path = local_path
 
         # Create a list of executed jobs
@@ -90,11 +90,15 @@ class ClusterClient:
 
     @local_path.setter
     def local_path(self, val: str) -> None:
-        if isinstance(val, str) and os.path.exists(val):
+        if val is None:
+            self._local_path = None
+        elif isinstance(val, str) and os.path.isdir(val):
             logging.warning('Overwriting local path.')
             self._local_path = val
         else:
-            logging.error('Local path passed does not exist, aborting.')
+            e_msg = 'Local path passed does not exist.'
+            logging.error(e_msg)
+            raise ValueError(e_msg)
 
     def disconnect(self) -> None:
         if self.server:
@@ -129,6 +133,12 @@ class ClusterClient:
             # XXX: Only works with python 3.6+ ?
             jobname = ''.join(
                 choices(string.ascii_uppercase + string.digits, k=6)
+                )
+
+        if (not isinstance(f, types.FunctionType) and
+                not isinstance(f, str)):
+            raise TypeError(
+                'Job work must be a python function or a cmd string'
                 )
 
         if not self.local_path or not self.remote_path:
