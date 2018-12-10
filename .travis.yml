@@ -8,7 +8,9 @@ install:
   - pip install --upgrade pip
   - pip install --upgrade setuptools
   - pip install pytest
+  - pip install pytest-mypy
   - python setup.py install
 # command to run tests
 script:
-  - cd tests && pytest
+  - cd tests
+  - MYPYPATH=$PWD/..:$MYPYPATH pytest --mypy
