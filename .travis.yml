@@ -1,9 +1,12 @@
 language: python
 python:
   - "3.6"
-  - "3.7-dev"
+  - "nightly"
+#  - "3.7-dev" # For now 3.7 have problems with travis
 # command to install dependencies
 install:
+  - pip install --upgrade pip
+  - pip install --upgrade setuptools
   - pip install pytest
   - python setup.py install
 # command to run tests
