@@ -1,7 +1,6 @@
 import pytest
 
 from carcosa.cluster import ClusterClient
-from carcosa.qsystems.local import LocalServer
 
 def test_no_uri():
     c = ClusterClient()
