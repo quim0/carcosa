@@ -133,11 +133,9 @@ class ClusterServer:
     def ping(self) -> str:
         return 'pong'
 
-    # For typing the best would be to use 'NoReturn' instead of 'None', but it's
-    # new in Python 3.6.5, most systems have 3.6.1 atm.
     def daemonize(self,
                   host: Optional[str] = None,
-                  port: int = 0) -> Union[Tuple[str, str], None]:
+                  port: int = 0) -> Tuple[str, str]:
         """
         Starts a server in a new process.
 
@@ -158,7 +156,7 @@ class ClusterServer:
                 When the server was not started correctly
         """
         self._id = self._get_id()
-        r, w = os.pipe()
+        r_fd, w_fd = os.pipe()
         pid = os.fork()
         if pid == 0:
             # Child code
@@ -166,8 +164,8 @@ class ClusterServer:
             try:
                 # Close the read pipe, as the child will just notify when the
                 # process start.
-                os.close(r)
-                w = os.fdopen(w, 'w')
+                os.close(r_fd)
+                w = os.fdopen(w_fd, 'w')
                 with Pyro4.Daemon(host=host, port=port) as daemon:
                     logging.info('Registering daemon')
                     uri = daemon.register(self)
@@ -209,10 +207,10 @@ class ClusterServer:
                 w.close()
                 os._exit(0)
         else:
-            os.close(w)
+            os.close(w_fd)
 
             # Wait for the child message
-            r = os.fdopen(r)
+            r = os.fdopen(r_fd)
             r.read()
             r.close()
 
