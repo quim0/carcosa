@@ -34,27 +34,48 @@ class ClusterServer:
 
     @property
     def pid_filepath(self) -> str:
-        pid_file = self.PID_FILE.format(
-            qtype=self.qsystem,
-            id=self.id
-            )
-        return os.path.join(config.path, pid_file)
+        if self.id is not None:
+            pid_file = self.PID_FILE.format(
+                qtype=self.qsystem,
+                id=self.id
+                )
+            return os.path.join(config.path, pid_file)
+        else:
+            logging.error(
+                'ID for this server is not defined. Make sure that you started'
+                ' the server through the daemonize method'
+                )
+            raise ValueError('ID not defined')
 
     @property
     def uri_filepath(self) -> str:
-        uri_file = self.URI_FILE.format(
-            qtype=self.qsystem,
-            id=self.id
-            )
-        return os.path.join(config.path, uri_file)
+        if self.id is not None:
+            uri_file = self.URI_FILE.format(
+                qtype=self.qsystem,
+                id=self.id
+                )
+            return os.path.join(config.path, uri_file)
+        else:
+            logging.error(
+                'ID for this server is not defined. Make sure that you started'
+                ' the server through the daemonize method'
+                )
+            raise ValueError('ID not defined')
 
     @property
     def log_filepath(self) -> str:
-        log_file = self.LOG_FILE.format(
-            qtype=self.qsystem,
-            id=self.id
-            )
-        return os.path.join(config.path, log_file)
+        if self.id is not None:
+            log_file = self.LOG_FILE.format(
+                qtype=self.qsystem,
+                id=self.id
+                )
+            return os.path.join(config.path, log_file)
+        else:
+            logging.error(
+                'ID for this server is not defined. Make sure that you started'
+                ' the server through the daemonize method'
+                )
+            raise ValueError('ID not defined')
 
     @property
     def id(self) -> Optional[int]:
