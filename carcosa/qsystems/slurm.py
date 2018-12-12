@@ -83,7 +83,7 @@ class SlurmServer(ClusterServer):
                 ID of the submitted job
         """
         args = [SBATCH, script_path]
-        res = self.cmd(args)
+        res = self._cmd(args)
         if res.returncode != 0:
             logging.error('sbatch failed with code {}'.format(res.returncode))
             return None
@@ -104,7 +104,7 @@ class SlurmServer(ClusterServer):
             success (bool)
         """
         job_ids.insert(0, SCANCEL)
-        res = self.cmd(job_ids)
+        res = self._cmd(job_ids)
 
         return res.returncode == 0
 
@@ -129,8 +129,8 @@ class SlurmServer(ClusterServer):
             sacct_args.append('-j {}'.format(job_id))
             squeue_args.append('-j {}'.format(job_id))
 
-        squeue_out = self.cmd(squeue_args).output
-        sacct_out = self.cmd(sacct_args).output
+        squeue_out = self._cmd(squeue_args).output
+        sacct_out = self._cmd(sacct_args).output
 
         squeue = list(
             map(lambda x: tuple(x.split('|')), squeue_out.split('\n'))

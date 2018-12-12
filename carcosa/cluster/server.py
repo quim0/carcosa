@@ -104,7 +104,7 @@ class ClusterServer:
 
         return id_
 
-    def cmd(self, args) -> subprocess.CompletedProcess:
+    def _cmd(self, args) -> subprocess.CompletedProcess:
         # Python 3.5 > required
         logging.info('Executing {}'.format(' '.join(args)))
         return subprocess.run(args)
@@ -121,6 +121,7 @@ class ClusterServer:
         if os.path.exists(self.log_filepath):
             os.remove(self.log_filepath)
 
+    @Pyro4.expose
     def shutdown(self) -> None:
         if self._daemon:
             self._daemon.shutdown()
@@ -130,6 +131,7 @@ class ClusterServer:
                 'Trying to shutdown a non existing server. Aborting'
                 )
 
+    @Pyro4.expose
     def ping(self) -> str:
         return 'pong'
 
@@ -193,6 +195,7 @@ class ClusterServer:
                         try:
                             logging.info('Starting the Pyro4 server')
                             w.write('ok')
+                            w.flush()
                             daemon.requestLoop()
                         except Exception as e:
                             w.write('ko')
@@ -211,7 +214,7 @@ class ClusterServer:
 
             # Wait for the child message
             r = os.fdopen(r_fd)
-            r.read()
+            r.read(1)
             r.close()
 
             if not os.path.isfile(self.pid_filepath):
