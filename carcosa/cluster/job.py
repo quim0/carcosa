@@ -1,4 +1,5 @@
 from typing import Dict, Union, Callable, List, Optional, Any, TYPE_CHECKING
+import marshal
 import types
 import logging
 import os
@@ -11,6 +12,13 @@ if TYPE_CHECKING:
     # This is a cyclic dependency at runtime, but it's necessary when
     # performing the type checking.
     from carcosa.cluster import ClusterClient
+
+
+class JobResultError(Exception):
+    """
+    Raised when the marshal file of the result value is invalid.
+    """
+    pass
 
 
 class Job:
@@ -49,6 +57,13 @@ class Job:
         self.f = f
         self.script = s
         self.options = o
+
+        # Make sure that stdout and stderr is saved
+        if not self.outfile:
+            self.outfile = self.script.name + '.out'
+
+        if not self.errfile:
+            self.errfile = self.script.name + '.err'
 
         logging.info('Created new job {}'.format(self.script.name))
 
@@ -141,6 +156,36 @@ class Job:
             with open(self.errfile, 'r') as f:
                 return f.read()
         return None
+
+    @property
+    def retval(self) -> Any:
+        """
+        Gets the return value for the job
+        """
+        if not self.finished:
+            logging.warning(
+                'Job have not finished yet, won\'t read result file.'
+                )
+            return
+
+        if not os.path.isfile(self.script.out_file):
+            logging.error(
+                'Result marshal file does not exist! Aborting. ({})'.format(
+                    self.script.out_file
+                    )
+                )
+            raise FileNotFoundError
+
+        with open(self.script.out_file, 'rb') as f:
+            try:
+                v = marshal.load(f)
+                if isinstance(v, Exception):
+                    raise v
+            except (EOFError, ValueError, TypeError) as e:
+                logging.error(
+                    'Error loading the result marshal file: {}'.format(e)
+                    )
+                raise JobResultError
 
     # Methods
 
