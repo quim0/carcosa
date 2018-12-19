@@ -65,6 +65,15 @@ class Job:
         if not self.errfile:
             self.errfile = self.script.name + '.err'
 
+        # If the job name is not defined in the options use the default one
+        if 'jname' not in self.options.keys():
+            self.options['jname'] = self.script.name
+
+        # If the working directory is not defined in options use the default
+        # one
+        if self.remote_path and 'workdir' not in self.options.keys():
+            self.options['workdir'] = self.remote_path
+
         logging.info('Created new job {}'.format(self.script.name))
 
     # Path related properties

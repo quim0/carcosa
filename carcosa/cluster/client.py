@@ -119,9 +119,18 @@ class ClusterClient:
         Get a Job for the function or command passed.
 
         Available options are (for slurm):
-        - ``outfile``: File where the stdout of the launched job will be saved.
-          It must be a relative path to the job root path.
-        -
+        - ``output`` (str): File where the stdout of the launched job will be saved.
+        - ``error`` (str): File where the stderr will be saved.
+        - ``jname`` (str): Job for the name (if different from the name in the
+           :class:`~carcosa.scripts.Script` object).
+        - ``time`` (str): Walltime, in format ``DD-HH:MM:SS``.
+        - ``queue`` (str): Queue to launch the job (``--qos``).
+        - ``workdir`` (str): Workdir of the job, if different from remote_path.
+        - ``nodes`` (int): Number of nodes to use.
+        - ``ntasks`` (int): Numbers of tasks to spawn.
+        - ``cpus_per_task`` (int): Self explainatory.
+        - ``tasks_per_node`` (int): Self explainatory.
+        - ``exclusive`` (bool): Use the nodes in exclusive mode.
 
         Args:
             f (Union[Callable, str]):
