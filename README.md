@@ -33,6 +33,20 @@ TODO...
 
 TODO...
 
+# Test
+
+To run the tests, install carcosa with:
+
+``` bash
+pip install -e .[test]  # Use --user if not in a venv
+```
+
+Then run the tests:
+
+``` bash
+cd tests && pytest
+```
+
 # Name
 
 Carcosa is a city, mysterious, ancient, and possibly cursed. Cluster management

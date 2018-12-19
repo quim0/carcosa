@@ -30,7 +30,8 @@ class Job:
                  o: Dict,
                  client: 'ClusterClient') -> None:
         """
-        TODO: Cluster client type annotation
+        .. todo:: Cluster client type annotation
+
         Args:
             f (types.Function or str):
                 Function or command to execute.
@@ -80,6 +81,9 @@ class Job:
 
     @property
     def local_path(self) -> Optional[str]:
+        """
+        Workpath of the job in the local server.
+        """
         return self.script.local_path
 
     @local_path.setter
@@ -93,6 +97,9 @@ class Job:
 
     @property
     def remote_path(self) -> Optional[str]:
+        """
+        Workpath of the job in the remote server.
+        """
         return self.script.remote_path
 
     @remote_path.setter
@@ -102,6 +109,9 @@ class Job:
 
     @property
     def outfile(self) -> Optional[str]:
+        """
+        Path of the stderr file.
+        """
         if 'output' in self.options.keys():
             return self.options['output']
         return None
@@ -112,6 +122,9 @@ class Job:
 
     @property
     def errfile(self) -> Optional[str]:
+        """
+        Path of the stderr file.
+        """
         if 'error' in self.options.keys():
             return self.options['error']
         return None
@@ -124,12 +137,19 @@ class Job:
 
     @property
     def finished(self) -> bool:
+        """
+        Returns True if the job have finished (may be with errors), False if
+        not.
+        """
         if self.status.lower() in DONE_STATES:
             return True
         return False
 
     @property
     def running(self) -> bool:
+        """
+        Returns True if the job is running, False if not
+        """
         if self.status.lower() in ACTIVE_STATES:
             return True
         return False
@@ -138,6 +158,9 @@ class Job:
 
     @property
     def stdout(self) -> Optional[str]:
+        """
+        Standard output for a job.
+        """
         if not self.launched:
             logging.warning('Job have not been submitted yet. Aborting')
             return None
@@ -153,6 +176,9 @@ class Job:
 
     @property
     def stderr(self) -> Optional[str]:
+        """
+        Standard error of a job.
+        """
         if not self.launched:
             logging.warning('Job have not been submitted yet. Aborting')
             return None
@@ -169,7 +195,7 @@ class Job:
     @property
     def retval(self) -> Any:
         """
-        Gets the return value for the job
+        Gets the return value for the job.
         """
         if not self.finished:
             logging.warning(
@@ -203,6 +229,16 @@ class Job:
     # Methods
 
     def update(self) -> None:
+        """
+        Queries the remote queue system to update the status of the job.
+
+        Raises:
+            ValueError:
+                The id returned by the remote queue system is different than
+                the local id, this **MUST NOT** happen.
+            Pyro4.errors.ConnectionClosedError:
+                The connection with the remote object is lost.
+        """
         if not self.launched:
             logging.warning('Job have not been submitted yet. Aborting')
             return
@@ -248,6 +284,8 @@ class Job:
             ValueError:
                 If local or remote paths are not set, as it won't be able to
                 generate the scripts.
+            Pyro4.errors.ConnectionClosedError:
+                If the connection with the remote object is lost.
         """
         if not force and self.status != self.INIT_STATUS:
             logging.warning('Job have been already launched. Aborting')

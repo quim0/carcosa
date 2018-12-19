@@ -48,6 +48,9 @@ class ClusterClient:
 
     @property
     def uri(self) -> Optional[str]:
+        """
+        URI of the Pyro4 remote object.
+        """
         return self._uri
 
     @uri.setter
@@ -58,12 +61,18 @@ class ClusterClient:
 
     @property
     def server(self) -> Pyro4.Proxy:
+        """
+        Get the Pyro4 remote object
+        """
         if self._server is None:
             self._server = self._get_server()
         return self._server
 
     @property
     def connected(self) -> bool:
+        """
+        True if the client is connected, False if not
+        """
         # TODO: Ping server
         return self._server is not None
 
@@ -119,10 +128,10 @@ class ClusterClient:
         Get a Job for the function or command passed.
 
         Available options are (for slurm):
+
         - ``output`` (str): File where the stdout of the launched job will be saved.
         - ``error`` (str): File where the stderr will be saved.
-        - ``jname`` (str): Job for the name (if different from the name in the
-           :class:`~carcosa.scripts.Script` object).
+        - ``jname`` (str): Job for the name (if different from the name in the :class:`~carcosa.scripts.Script` object).
         - ``time`` (str): Walltime, in format ``DD-HH:MM:SS``.
         - ``queue`` (str): Queue to launch the job (``--qos``).
         - ``workdir`` (str): Workdir of the job, if different from remote_path.
@@ -131,6 +140,7 @@ class ClusterClient:
         - ``cpus_per_task`` (int): Self explainatory.
         - ``tasks_per_node`` (int): Self explainatory.
         - ``exclusive`` (bool): Use the nodes in exclusive mode.
+
 
         Args:
             f (Union[Callable, str]):
@@ -142,8 +152,7 @@ class ClusterClient:
                 Job of the name
 
         Returns:
-            job (Job):
-                New job created.
+            Job: New job created.
         """
         if not jobname:
             # XXX: Only works with python 3.6+ ?
@@ -192,6 +201,8 @@ class ClusterClient:
                 Number of times that the Job will be resubmitted in case of
                 error.
 
+        Returns:
+            Job: The job launched.
         Raises:
             ValueError:
                 Can't get the job object because there was no provided, and the
