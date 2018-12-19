@@ -1,5 +1,6 @@
 from typing import Optional, List, Union, Callable, Dict, Iterator, Tuple, Any
 from random import choices
+from time import sleep
 import string
 import types
 import os
@@ -63,6 +64,7 @@ class ClusterClient:
 
     @property
     def connected(self) -> bool:
+        # TODO: Ping server
         return self._server is not None
 
     @property
@@ -116,6 +118,11 @@ class ClusterClient:
         """
         Get a Job for the function or command passed.
 
+        Available options are (for slurm):
+        - ``outfile``: File where the stdout of the launched job will be saved.
+          It must be a relative path to the job root path.
+        -
+
         Args:
             f (Union[Callable, str]):
                 It can be a function or a command, to execute in the queue
@@ -153,6 +160,103 @@ class ClusterClient:
         self.jobs.append(j)
 
         return j
+
+    def launch_job(job: Optional[Job] = None,
+                   args: List = [],
+                   kwargs: Dict = {},
+                   retries: int = 3) -> Job:
+        """
+        Launches a job, with correct error handling. If not job is provided, it
+        gets the las job that was created in the client.
+
+        Args:
+            job (:class:`Job`, optional):
+                Job to be launched, if no job is passed, it'll use the last one
+                created at this client.
+            args (list, optional):
+                Arguments for the job, if the job will execute a python
+                function.
+            kwargs (dict, optional):
+                Keyword arguments for the job, if the job will execute a python
+                function.
+            retries (int, optional):
+                Number of times that the Job will be resubmitted in case of
+                error.
+
+        Raises:
+            ValueError:
+                Can't get the job object because there was no provided, and the
+                client job list is empty.
+                Local or remote path are not set for the job, and can not be
+                obtained from the client.
+            ConnectionError:
+                The connection with the remote server
+        """
+        if not job:
+            if len(self.jobs) > 0:
+                job = self.jobs[-1]
+            else:
+                raise ValueError(
+                    'No job was provided, and client jobs list is empty.'
+                    )
+
+        try:
+            job.launch(args, kwargs)
+            return job
+        except ValueError as e:
+            logging.warning(
+                'Local or remote paths for the job are not set, trying to '
+                "get them from the client."
+                )
+
+            # Try to fill the job local and remote path with the client data, if
+            # it exists
+            local_path_set = False
+            remote_path_set = False
+
+            if not job.local_path:
+                if self.local_path:
+                    logging.info('Local path set from client data')
+                    job.local_path = self.local_path
+                    local_path_set = True
+            else:
+                local_path_set = True
+
+            if not job.remote_path:
+                if self.remote_path:
+                    logging.info('Remote path set from client data.')
+                    job.remote_path = self.remote_path
+                    remote_path_set = True
+            else:
+                remote_path_set = True
+
+            if not (local_path_set and remote_path_set):
+                logging.error('Can not set local or remote path for the job')
+                raise e
+            else:
+                # Relaunch the job if possible
+                self.launch_job(job, args, kwargs, retries)
+
+        except Pyro4.errors.ConnectionClosedError:
+            logging.error(
+                'Connection was closed while trying to launch the job'
+                )
+            # TODO: call disconnect ?
+            # TODO: async time wait ?
+            # Wait some time (arbitrary), reset the server and try to reconnect
+            time.sleep(1)
+            self._server = None
+            if self.retries > 0:
+                logging.warning(
+                    'Could not start the job due to a connection error, '
+                    'retying ({})'.format(retries))
+                return self.launch_job(job, args, kwargs, retries - 1)
+            logging.critical(
+                'Could not launch the job'
+                )
+            raise ConnectionError(
+                'Con not connect to the remote server to launch the job'
+                )
 
     def _get_server(self, retries: int = 3) -> Optional[Pyro4.Proxy]:
         if not self.uri:

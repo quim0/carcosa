@@ -174,18 +174,22 @@ class Job:
                     self.script.out_file
                     )
                 )
-            raise FileNotFoundError
+            raise FileNotFoundError('Marshal file not found')
 
         with open(self.script.out_file, 'rb') as f:
             try:
                 v = marshal.load(f)
                 if isinstance(v, Exception):
                     raise v
+                elif isinstance(v, type) and issubclass(v, Exception):
+                    raise v
+                else:
+                    return v
             except (EOFError, ValueError, TypeError) as e:
                 logging.error(
                     'Error loading the result marshal file: {}'.format(e)
                     )
-                raise JobResultError
+                raise JobResultError()
 
     # Methods
 

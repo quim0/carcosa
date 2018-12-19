@@ -1,4 +1,6 @@
 from typing import List, Optional, Callable, Dict, Any, Tuple
+import os
+import marshal
 import pytest
 import tempfile
 
@@ -77,6 +79,8 @@ def test_init_status():
     assert not j.launched
     assert not j.finished
     assert not j.running
+    assert j.outfile == TEST_JOBNAME + '.out'
+    assert j.errfile == TEST_JOBNAME + '.err'
 
 
 def test_launch():
@@ -179,3 +183,27 @@ def test_stderr():
         f.flush()
 
         assert j.stderr == test_str
+
+def test_retvar():
+    j = get_job()
+    ret_val = 'retval'
+    with open(j.script.out_file, 'wb+') as f:
+        marshal.dump(ret_val, f)
+
+    # Job have not finished
+    assert j.retval == None
+
+    j.status = 'complete'
+
+    assert j.retval == ret_val
+
+    # ret_val = ConnectionError()
+    # with open(j.script.out_file, 'wb+') as f:
+    #     marshal.dump(ret_val, f)
+
+    # with pytest.raises(ConnectionError):
+    #     j.retval
+
+    os.remove(j.script.out_file)
+    with pytest.raises(FileNotFoundError):
+        j.retval

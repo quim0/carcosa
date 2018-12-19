@@ -19,6 +19,7 @@ fi
 exit $exitcode
 """
 
+# TODO: Marshal can't serialize exceptions ??
 FUNC_RUNNER = """\
 import marshal
 import types
