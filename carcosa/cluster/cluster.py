@@ -20,8 +20,26 @@ class Cluster():
 
     @classmethod
     def new(cls,
+            local_path: Optional[str] = None,
+            remote_path: Optional[str] = None,
             qsystem: str = '',
-            uri: Optional[str] = None):
+            uri: Optional[str] = None) -> 'Cluster':
+        """
+        Create a new cluster insance. This class function asks for parameters
+        for initializing the client, if you want to start a server look at
+        :meth:`~carcosa.cluster.Cluster.serve`.
+
+        Args:
+            local_path:
+                Local path for the client.
+            remote_path:
+                Remote path for the client, if not sepcified the local path is \
+                used.
+            qsystem:
+                Remote queue system, if known (slurm, ...)
+            uri:
+                Pyro4 uri of the remote server, if known.
+        """
         c, s = (None, None)
         if qsystem:
             c, s = qsystems.get_queue_system(qsystem)
@@ -44,7 +62,23 @@ class Cluster():
             logging.error(e_msg)
             raise ValueError(e_msg)
 
-        c.uri = uri
+        # Create the instances from the classes
+        c = c(uri=uri, local_path=local_path, remote_path=remote_path)
+        s = s()
+        return cls(c, s, qsystem)
+
+    @classmethod
+    def serve(cls,
+              host: str = 'localhost',
+              port: int = 0,
+              qsystem: Optional[str] = None) -> 'Cluster':
+        if qsystem:
+            c, s = qsystems.get_queue_system(qsystem)
+        else:
+            pass
+
+        pid, uri = s.start(host=host, port=port)
+        c = c(uri=uri)
         return cls(c, s, qsystem)
 
     @property
