@@ -14,7 +14,7 @@ class ClusterServer:
     """
     Base class to implement queue management systems.
 
-    .. note::
+    .. warning::
 
         The ``qsystem`` property **MUST** me implemented.
     """
@@ -28,6 +28,14 @@ class ClusterServer:
 
     @property
     def qsystem(self) -> str:
+        """
+        Property that returns the qsystem type as a string.
+
+        .. note::
+
+            This is a pure virtual property and must be implemented by any
+            subclass.
+        """
         raise NotImplementedError(
             'A queue systems must be specified by the subclass'
             )
@@ -97,10 +105,8 @@ class ClusterServer:
                 Port to bind the server.
 
         Returns:
-            pid (str):
-                PID of the daemon process.
-            uri (str):
-                URI of the remote server.
+            tuple:
+                PID and URI of the daemon process.
         """
         obj = cls()
         pid, uri = obj.daemonize(host=host, port=port)
@@ -169,10 +175,7 @@ class ClusterServer:
                 Listening port for the server.
 
         Returns:
-            pid (str):
-                PID of the daemon process.
-            uri (str):
-                URI of the remote server.
+            tuple: PID and URI of the daemon process.
 
         Raises:
             ClusterServerError:
@@ -266,7 +269,7 @@ class ClusterServer:
     def metrics(self,
                 job_id: Optional[int] = None) -> Iterator[Tuple[str, ...]]:
         """
-        ..note::
+        .. note::
 
             Pure virtual, this must be implemented by any subclass.
         """
@@ -274,7 +277,7 @@ class ClusterServer:
 
     def queue_test(self) -> bool:
         """
-        ..note::
+        .. note::
 
             Pure virtual, this must be implemented by any subclass.
         """
@@ -282,7 +285,7 @@ class ClusterServer:
 
     def submit(self, script_path: str) -> Optional[str]:
         """
-        ..note::
+        .. note::
 
             Pure virtual, this must be implemented by any subclass.
         """
@@ -290,7 +293,7 @@ class ClusterServer:
 
     def kill(self, job_ids: List[Union[int, str]]) -> bool:
         """
-        ..note::
+        .. note::
 
             Pure virtual, this must be implemented by any subclass.
         """
@@ -299,7 +302,7 @@ class ClusterServer:
     def queue_parser(self, job_id: Optional[str] = None) \
             -> Iterator[Tuple[str, ...]]:
         """
-        ..note::
+        .. note::
 
             Pure virtual, this must be implemented by any subclass.
         """
